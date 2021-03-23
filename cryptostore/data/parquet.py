@@ -145,17 +145,17 @@ class Parquet(Store):
             
             writer = pq.ParquetWriter(save_path, self.data.schema, compression=self.comp_codec, compression_level=self.comp_level)
             writer.write_table(table=self.data)
-            self.buffer[f_name_tips] = {'counter': 0, 'writer': writer, 'timestamp': timestamp}
+            self.buffer[f_name_tips] = {'counter': datetime.datetime.now(), 'writer': writer, 'timestamp': timestamp}
         else:
             # Case 'append existing parquet file'.
             writer = self.buffer[f_name_tips]['writer']
             writer.write_table(table=self.data)
-            self.buffer[f_name_tips]['counter'] += 1
+            # self.buffer[f_name_tips]['counter'] += 1
 
         self.data = None
 
         # If `append_counter` is reached, close parquet file and reset `counter`.
-        if self.buffer[f_name_tips]['counter'] == self.append_counter:
+        if (datetime.datetime.now() - self.buffer[f_name_tips]['counter']).seconds/60 > self.append_counter:
             writer.close()
             if self._write or self.append_counter:
                 timestamp = self.buffer[f_name_tips]['timestamp']
