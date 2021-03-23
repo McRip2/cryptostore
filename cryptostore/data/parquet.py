@@ -82,7 +82,7 @@ class Parquet(Store):
             # and generator of dicts as 2nd paramter.
             names = data[0]
             data = data[1]
-
+        
         cols = {name: [] for name in names}
         for entry in data:
             for key in entry:
@@ -96,10 +96,16 @@ class Parquet(Store):
                   else pa.array(cols[col]) for col in cols]
         table = pa.Table.from_arrays(arrays, names=names)
         self.data = table
+        self.names = names
 
-    def write(self, exchange, data_type, pair, timestamp):
+    def write(self, exchange, data_type, pair, timestamp):               
         if not self.data:
             return
+
+        if not 'symbol' in self.names:
+            self.data = self.data.append_column(
+                'symbol', pa.array([pair] * len(self.data), pa.string()).dictionary_encode())
+        
         file_name = ''
         timestamp = str(int(timestamp))
         if self.file_name:
@@ -174,7 +180,7 @@ class Parquet(Store):
                         os.remove(final_path)
             # Reset counter
             del self.buffer[f_name_tips]
-
+            
     def get_start_date(self, exchange: str, data_type: str, pair: str) -> float:
         objs = []
         files = []
